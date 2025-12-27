@@ -45,7 +45,26 @@ uvicorn main:app --reload
 ```
 The API documentation (Swagger UI) will be available at: http://127.0.0.1:8000/docs
 
-**Running Tests**
+**API Endpoints:**
+
+| Method | Endpoint | Description | Body / Notes |
+| :--- | :--- | :--- | :--- |
+| **Tools** | | | |
+| `POST` | `/tools/` | Create a new tool | JSON: `{ "name": "...", "description": "..." }` |
+| `GET` | `/tools/` | List all tools for current tenant |  |
+| `PUT` | `/tools/{id}` | Update a tool | JSON: `{ "name": "...", "description": "..." }` |
+| `DELETE` | `/tools/{id}` | Delete a tool |  |
+| **Agents** | | | |
+| `POST` | `/agents/` | Create a new agent | JSON: `{ "name": "...", "role": "...", "description": "...", "tool_ids": [1, 2] }` |
+| `GET` | `/agents/` | List all agents |  |
+| `GET` | `/agents/{id}` | Get details of one agent |  |
+| `PUT` | `/agents/{id}` | Update an agent | JSON: `{ "name": "...", "tool_ids": [...] }` |
+| `DELETE` | `/agents/{id}` | Delete an agent |  |
+| **Execution** | | | |
+| `POST` | `/agents/{id}/run` | Run a task with an agent | JSON: `{ "prompt": "...", "model": "gpt-4o" }` |
+| `GET` | `/executions/` | View execution history | Params: `?skip=0&limit=10` |
+
+**Running Tests:**
 ```bash
 pytest
 ```
