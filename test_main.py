@@ -2,7 +2,6 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, StaticPool
 from sqlalchemy.orm import sessionmaker
-
 import models  
 from main import app
 from database import Base, get_db
@@ -116,3 +115,55 @@ def test_auth_failure():
     # Our custom logic catches this and returns 401 (Unauthorized)
     response = client.get("/tools/", headers={"x-api-key": "wrong-key"})
     assert response.status_code == 401
+
+def test_filter_tools():
+    t1 = client.post("/tools/", json={"name": "Hammer", "description": "A hammer"}, headers=auth_headers).json()
+    t2 = client.post("/tools/", json={"name": "Drill", "description": "A drill"}, headers=auth_headers).json()
+    
+    client.post(
+        "/agents/",
+        json={"name": "Builder", "role": "Worker", "description": "Builds", "tool_ids": [t1["id"]]},
+        headers=auth_headers
+    )
+
+    res_name = client.get("/tools/?name=Ham", headers=auth_headers)
+    assert len(res_name.json()) == 1
+    assert res_name.json()[0]["name"] == "Hammer"
+
+    res_agent = client.get("/tools/?agent_name=Builder", headers=auth_headers)
+    data = res_agent.json()
+    assert len(data) == 1
+    assert data[0]["name"] == "Hammer"
+
+def test_filter_agents():
+    t_spy = client.post("/tools/", json={"name": "Walther PPK", "description": "Gun"}, headers=auth_headers).json()
+    t_tech = client.post("/tools/", json={"name": "Laptop", "description": "Macbook"}, headers=auth_headers).json()
+
+    client.post("/agents/", json={"name": "James Bond", "role": "Spy", "description": "007", "tool_ids": [t_spy["id"]]}, headers=auth_headers)
+    client.post("/agents/", json={"name": "Q", "role": "Quartermaster", "description": "Tech support", "tool_ids": [t_tech["id"]]}, headers=auth_headers)
+
+    res = client.get("/agents/?name=Bond", headers=auth_headers)
+    assert len(res.json()) == 1
+    assert res.json()[0]["name"] == "James Bond"
+
+    res = client.get("/agents/?role=Quarter", headers=auth_headers)
+    assert len(res.json()) == 1
+    assert res.json()[0]["name"] == "Q"
+
+    res = client.get("/agents/?tool_name=Walther PPK", headers=auth_headers)
+    assert len(res.json()) == 1
+    assert res.json()[0]["name"] == "James Bond"
+
+def test_run_agent_invalid_model():
+    t_res = client.post("/tools/", json={"name": "X", "description": "X"}, headers=auth_headers).json()
+    a_res = client.post("/agents/", json={"name": "Test", "role": "X", "description": "X", "tool_ids": [t_res["id"]]}, headers=auth_headers).json()
+    agent_id = a_res["id"]
+
+    response = client.post(
+        f"/agents/{agent_id}/run",
+        json={"prompt": "Hello", "model": "invalid-model-name"},
+        headers=auth_headers
+    )
+
+    assert response.status_code == 400
+    assert "not supported" in response.json()["detail"]

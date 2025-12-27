@@ -51,17 +51,17 @@ The API documentation (Swagger UI) will be available at: http://127.0.0.1:8000/d
 | :--- | :--- | :--- | :--- |
 | **Tools** | | | |
 | `POST` | `/tools/` | Create a new tool | JSON: `{ "name": "...", "description": "..." }` |
-| `GET` | `/tools/` | List all tools for current tenant |  |
+| `GET` | `/tools/` | List all tools for current tenant | Filters: `?name=Hammer`, `?agent_name=Bond` |
 | `PUT` | `/tools/{id}` | Update a tool | JSON: `{ "name": "...", "description": "..." }` |
 | `DELETE` | `/tools/{id}` | Delete a tool |  |
 | **Agents** | | | |
 | `POST` | `/agents/` | Create a new agent | JSON: `{ "name": "...", "role": "...", "description": "...", "tool_ids": [1, 2] }` |
-| `GET` | `/agents/` | List all agents |  |
+| `GET` | `/agents/` | List all agents | Filters: `?name=Bond`, `?role=Spy`, `?tool_name=Gun` |
 | `GET` | `/agents/{id}` | Get details of one agent |  |
 | `PUT` | `/agents/{id}` | Update an agent | JSON: `{ "name": "...", "tool_ids": [...] }` |
 | `DELETE` | `/agents/{id}` | Delete an agent |  |
 | **Execution** | | | |
-| `POST` | `/agents/{id}/run` | Run a task with an agent | JSON: `{ "prompt": "...", "model": "gpt-4o" }` |
+| `POST` | `/agents/{id}/run` | Run a task with an agent | JSON: `{ "prompt": "...", "model": "gpt-4o" }`<br>Supported: `gpt-4o`, `gemini-3` |
 | `GET` | `/executions/` | View execution history | Params: `?skip=0&limit=10` |
 
 **Running Tests:**
