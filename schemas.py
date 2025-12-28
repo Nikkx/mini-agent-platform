@@ -16,6 +16,10 @@ class ToolResponse(ToolBase):
     class Config:
         from_attributes = True
 
+class ToolUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+
 # --- Agent Schemas ---
 class AgentBase(BaseModel):
     name: str
@@ -31,6 +35,12 @@ class AgentResponse(AgentBase):
 
     class Config:
         from_attributes = True
+
+class AgentUpdate(BaseModel):
+    name: Optional[str] = None
+    role: Optional[str] = None
+    description: Optional[str] = None
+    tool_ids: Optional[List[int]] = None
 
 # --- Execution Schema ---
 class ExecutionRequest(BaseModel):

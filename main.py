@@ -56,13 +56,18 @@ def read_tools(
     return query.all()
 
 @app.put("/tools/{tool_id}", response_model=schemas.ToolResponse)
-def update_tool(tool_id: int, tool_update: schemas.ToolCreate, db: Session = Depends(get_db), tenant_id: str = Depends(get_current_tenant)):
+def update_tool(
+    tool_id: int, 
+    tool_update: schemas.ToolUpdate,
+    db: Session = Depends(get_db), 
+    tenant_id: str = Depends(get_current_tenant)
+):
     """
-    Update an existing tool belonging to the authenticated tenant.
+    Update an existing tool for the authenticated tenant.
 
     Parameters:
     - tool_id: ID of the tool to update.
-    - tool_update: `ToolCreate` schema with updated fields.
+    - tool_update: `ToolUpdate` schema with optional fields to modify (e.g., `name`, `description`).
     - db: Database session (injected via dependency).
     - tenant_id: ID of the tenant making the request.
 
@@ -70,14 +75,17 @@ def update_tool(tool_id: int, tool_update: schemas.ToolCreate, db: Session = Dep
     The updated `Tool` model instance.
 
     Raises:
-    - HTTPException(status_code=404): If the tool does not exist or does not belong to the tenant.
+    - HTTPException(status_code=404): If the tool does not exist for the tenant.
     """
     db_tool = db.query(models.Tool).filter(models.Tool.id == tool_id, models.Tool.tenant_id == tenant_id).first()
     if not db_tool:
         raise HTTPException(status_code=404, detail="Tool not found")
     
-    db_tool.name = tool_update.name
-    db_tool.description = tool_update.description
+    if tool_update.name is not None:
+        db_tool.name = tool_update.name
+    if tool_update.description is not None:
+        db_tool.description = tool_update.description
+        
     db.commit()
     db.refresh(db_tool)
     return db_tool
@@ -191,14 +199,18 @@ def read_single_agent(agent_id: int, db: Session = Depends(get_db), tenant_id: s
     return agent
 
 @app.put("/agents/{agent_id}", response_model=schemas.AgentResponse)
-def update_agent(agent_id: int, agent_update: schemas.AgentCreate, db: Session = Depends(get_db), 
-                 tenant_id: str = Depends(get_current_tenant)):
+def update_agent(
+    agent_id: int, 
+    agent_update: schemas.AgentUpdate,
+    db: Session = Depends(get_db), 
+    tenant_id: str = Depends(get_current_tenant)
+):
     """
     Update an existing agent's attributes and tool assignments for the tenant.
 
     Parameters:
     - agent_id: ID of the agent to update.
-    - agent_update: `AgentCreate` schema with updated fields (including optional `tool_ids`).
+    - agent_update: `AgentUpdate` schema with optional fields to modify (e.g., `name`, `role`, `description`, `tool_ids`).
     - db: Database session (injected via dependency).
     - tenant_id: ID of the tenant making the request.
 
@@ -213,14 +225,23 @@ def update_agent(agent_id: int, agent_update: schemas.AgentCreate, db: Session =
     if not db_agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
-    db_agent.name = agent_update.name
-    db_agent.role = agent_update.role
-    db_agent.description = agent_update.description
+    if agent_update.name is not None:
+        db_agent.name = agent_update.name
+    if agent_update.role is not None:
+        db_agent.role = agent_update.role
+    if agent_update.description is not None:
+        db_agent.description = agent_update.description
     
     if agent_update.tool_ids is not None:
-        tools = db.query(models.Tool).filter(models.Tool.id.in_(agent_update.tool_ids), models.Tool.tenant_id == tenant_id).all()
+        tools = db.query(models.Tool).filter(
+            models.Tool.id.in_(agent_update.tool_ids),
+            models.Tool.tenant_id == tenant_id
+        ).all()
+        
+        # Verify we found all the tools requested
         if len(tools) != len(agent_update.tool_ids):
              raise HTTPException(status_code=400, detail="One or more tools not found")
+             
         db_agent.tools = tools
 
     db.commit()
